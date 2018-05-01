@@ -13,7 +13,7 @@
 typedef enum {start=1, isNum=2, num=4, plus=8, minus=16,  /* definice stavů kon. automatu*/
     krat=32, deleno=64, lzavorka=128, pzavorka=256,
     strednik=512, ef=1024, error=2048,
-    letters = 4096, letteri = 8192, sinus = 16384
+    sinus = 4096, cosinus = 8192
 } tStav;
 /*-----------------2.12.2004 6:41-------------------
  * Pozn: Jednotlivé stavy mají přiřazené ordinální hodnoty 2^N, aby bylo
@@ -83,9 +83,19 @@ int lexAnalyzer() {              /* Implementace konečného automatu */
                         case ')': return pzavorka; break;
                         case ';': return strednik; break;
 
-                        case 's': return letters; break;
-                        case 'i': return letteri; break;
-                        case 'n': return sinus; break;
+                        case 's':
+                        if(fgetc(soubor) == 'i'){
+                            if(fgetc(soubor) == 'n'){
+                                return sinus;
+                            }
+                            else{
+                                return error;
+                            }
+                        }
+                        else{
+                            return error;
+                        }
+                        break;
 
                         default: return error; break;
                     }
@@ -147,7 +157,7 @@ void check(int s) {
 void s() {
     /* S  -> EX; S | e */
     float val=0;
-    check (plus|minus|lzavorka|num|ef|sinus|letters|letteri);
+    check (plus|minus|lzavorka|num|ef|sinus);
     if (symbol!=ef) {
         val=ex();
         printf("Vysledek=%f\n", val);
@@ -159,7 +169,7 @@ void s() {
 float ex() {
     /* EX  -> M EX2 | e */
     float val=0;
-    check (plus|minus|lzavorka|num|pzavorka|ef|sinus|letters|letteri);
+    check (plus|minus|lzavorka|num|pzavorka|ef|sinus);
     if (symbol!=ef) {
         val=m();
         val=ex2(val);
@@ -171,7 +181,7 @@ float ex2(float v) {
     /* EX2 -> + M EX2 | - M EX2 | e */
     float val=0;
 
-    check(plus|minus|strednik|pzavorka|ef|sinus|letters|letteri);
+    check(plus|minus|strednik|pzavorka|ef|sinus);
     if (symbol==plus || symbol==minus) {
         if (symbol==plus) {
             symbol=lexAnalyzer();
@@ -199,7 +209,7 @@ float m() {
 float m2(float v) {
     /*  M2  -> * T M2| / T M2| e */
     float val;
-    check(krat|deleno|plus|minus|strednik|pzavorka|sinus|letters|letteri);
+    check(krat|deleno|plus|minus|strednik|pzavorka|sinus);
     if (symbol==krat || symbol==deleno) {
         if (symbol==krat) {
             symbol=lexAnalyzer();
@@ -225,7 +235,7 @@ float m2(float v) {
 float t() {
     /*   T-> num | + num | -num | ( EX ) | sin(EX) | cos(EX) */
     float val;
-    check(num|plus|minus|lzavorka|sinus|letters|letteri);
+    check(num|plus|minus|lzavorka|sinus);
     if (symbol==num) {
         val=(float)numval;
         symbol=lexAnalyzer();
@@ -245,14 +255,6 @@ float t() {
                 val=ex();
                 expect(pzavorka);
                 return val;
-            case letters:
-                symbol = lexAnalyzer();
-                expect(letteri);
-                break;
-            case letteri:
-                symbol = lexAnalyzer();
-                expect(sinus);
-                break;
             case sinus:
                 symbol = lexAnalyzer();
                 val = (float) sin(ex());
