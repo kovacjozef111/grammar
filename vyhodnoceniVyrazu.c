@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <math.h>
 
 typedef enum {start=1, isNum=2, num=4, plus=8, minus=16,  /* definice stavů kon. automatu*/
@@ -52,10 +53,44 @@ int index(long sym) {
 }
 
 
+
 char numbuf[50];                 /* numbuf slouží pro ukládání číslic čísel int */
 char linebuf[200];               /* v linebuf se postupně ukládá celý řádek ze vstupu. Použití=výpis chyb*/
 int numval, linenr, column;      /* numval=číselná hodnota čísla int na vstupu. Linenr=aktuální č. řádku, column=akt.č. sloupce */
 FILE * soubor;                   /* vstupní soubor */
+
+
+bool readAndMatch(char expected[]){
+    for(unsigned int i = 1; i < strlen(expected); i++){
+        if(fgetc(soubor) == expected[i]){
+            linebuf[column++] = expected[i];
+        }
+        else{
+            return false;
+        }
+    }
+    return true;
+}
+
+bool functionRead(char start){
+
+    char expected[3] = {0};
+
+    switch(start){
+    case 's':
+        strcpy(expected, "sin");
+        break;
+    case 'c':
+        strcpy(expected, "cos");
+        break;
+    }
+
+    if(readAndMatch(expected)){
+        return true;
+    }
+    return false;
+}
+
 
 int lexAnalyzer() {              /* Implementace konečného automatu */
     tStav stav=start;            /* na začátku nastavíme stav na start */
@@ -84,15 +119,17 @@ int lexAnalyzer() {              /* Implementace konečného automatu */
                         case ';': return strednik; break;
 
                         case 's':
-                        if(fgetc(soubor) == 'i'){
-                            linebuf[column++]='i';
-                            if(fgetc(soubor) == 'n'){
-                                linebuf[column++]='n';
+                            if(functionRead(c)){
                                 return sinus;
                             }
                             return error;
-                        }
-                        return error;
+                        break;
+
+                        case 'c':
+                            if(functionRead(c)){
+                                return cosinus;
+                            }
+                            return error;
                         break;
 
                         default: return error; break;
@@ -155,7 +192,7 @@ void check(int s) {
 void s() {
     /* S  -> EX; S | e */
     float val=0;
-    check (plus|minus|lzavorka|num|ef|sinus);
+    check (plus|minus|lzavorka|num|ef|sinus|cosinus);
     if (symbol!=ef) {
         val=ex();
         printf("Vysledek=%f\n", val);
@@ -167,7 +204,7 @@ void s() {
 float ex() {
     /* EX  -> M EX2 | e */
     float val=0;
-    check (plus|minus|lzavorka|num|pzavorka|ef|sinus);
+    check (plus|minus|lzavorka|num|pzavorka|ef|sinus|cosinus);
     if (symbol!=ef) {
         val=m();
         val=ex2(val);
@@ -179,7 +216,7 @@ float ex2(float v) {
     /* EX2 -> + M EX2 | - M EX2 | e */
     float val=0;
 
-    check(plus|minus|strednik|pzavorka|ef|sinus);
+    check(plus|minus|strednik|pzavorka|ef|sinus|cosinus);
     if (symbol==plus || symbol==minus) {
         if (symbol==plus) {
             symbol=lexAnalyzer();
@@ -207,7 +244,7 @@ float m() {
 float m2(float v) {
     /*  M2  -> * T M2| / T M2| e */
     float val;
-    check(krat|deleno|plus|minus|strednik|pzavorka|sinus);
+    check(krat|deleno|plus|minus|strednik|pzavorka|sinus|cosinus);
     if (symbol==krat || symbol==deleno) {
         if (symbol==krat) {
             symbol=lexAnalyzer();
@@ -233,7 +270,7 @@ float m2(float v) {
 float t() {
     /*   T-> num | + num | -num | ( EX ) | sin(EX) | cos(EX) */
     float val;
-    check(num|plus|minus|lzavorka|sinus);
+    check(num|plus|minus|lzavorka|sinus|cosinus);
     if (symbol==num) {
         val=(float)numval;
         symbol=lexAnalyzer();
@@ -257,10 +294,10 @@ float t() {
                 symbol = lexAnalyzer();
                 val = (float) sin(ex());
                 return val;
-            /*case cosinus:
+            case cosinus:
                 symbol = lexAnalyzer();
                 val = (float) cos(ex());
-                return val;*/
+                return val;
             default:
                 printf("Error: unexpected symbol...\n");
                 return 0;
