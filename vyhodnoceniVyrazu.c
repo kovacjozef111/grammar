@@ -42,7 +42,7 @@ typedef enum {start=1, isNum=2, num=4, plus=8, minus=16,  /* definice stavů kon
  * --------------------------------------------------*/
 char* symbols[]={
     "start","isNum","num","plus","minus","krat","deleno",
-        "lzavorka","pzavorka","eof","error"
+        "lzavorka","pzavorka","eof","error", "sinus", "cosinus"
 };
 int index(long sym) {
     int ind=0;
@@ -85,16 +85,14 @@ int lexAnalyzer() {              /* Implementace konečného automatu */
 
                         case 's':
                         if(fgetc(soubor) == 'i'){
+                            linebuf[column++]='i';
                             if(fgetc(soubor) == 'n'){
+                                linebuf[column++]='n';
                                 return sinus;
                             }
-                            else{
-                                return error;
-                            }
-                        }
-                        else{
                             return error;
                         }
+                        return error;
                         break;
 
                         default: return error; break;
@@ -264,7 +262,7 @@ float t() {
                 val = (float) cos(ex());
                 return val;*/
             default:
-                printf("Error: unexpected symbol...");
+                printf("Error: unexpected symbol...\n");
                 return 0;
         }
     }
@@ -278,6 +276,7 @@ int main() {
     printf("\nVysledek=%f\n", val);
 
     /* Pro vypocet nekolika vyrazu oddelenych strednikem: */
+    symbol = lexAnalyzer();
     s();
     return 0;
 }
