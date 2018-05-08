@@ -170,7 +170,7 @@ int symbol;
 void expect(long s) {
  if (symbol==s) symbol=lexAnalyzer();
  else {
-   printf("symbol nr. %d expected !", symbol);
+   printf("symbol \"%s\" expected !\n", symbols[index(symbol)]);
    exit(-1);
     }
 }
@@ -181,7 +181,7 @@ void expect(long s) {
  * --------------------------------------------------*/
 void check(int s) {
     if (!(symbol&s)) {
-        printf("unexpected symbol nr. %d !", symbol );
+        printf("unexpected symbol \"%s\" !\n", symbols[index(symbol)] );
         exit(-1);
     }
 }
